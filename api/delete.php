@@ -7,10 +7,10 @@ header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 // Include i file necessari (sostituisci con i percorsi corretti)
-include("../Owly/corsiDb.php");
-include("../Owly/gestioneCorsi.php");
-include("../Owly/owlyDatabase.php");
-include("../Owly/database.php");
+include("../corsiDb.php");
+include("../gestioneCorsi.php");
+include("../owlyDatabase.php");
+include("../database.php");
 
 // Verifica se sono stati inviati dati JSON
 $data = json_decode(file_get_contents("php://input"));

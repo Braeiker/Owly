@@ -7,10 +7,10 @@ header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 // Include necessary files
-include("../Owly/corsiDb.php");
-include("../Owly/gestioneCorsi.php");
-include("../Owly/owlyDatabase.php");
-include("../Owly/database.php");
+include("../corsiDb.php");
+include("../gestioneCorsi.php");
+include("../owlyDatabase.php");
+include("../database.php");
 
 // Initialize database and objects
 $database = new Database();
