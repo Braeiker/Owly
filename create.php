@@ -7,9 +7,9 @@ header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 // Include necessary files
-include("../Owly/corsi_db.php");
-include("../Owly/gestione_corsi.php");
-include("../Owly/owly_database.php");
+include("../Owly/corsiDb.php");
+include("../Owly/gestioneCorsi.php");
+include("../Owly/owlyDatabase.php");
 include("../Owly/database.php");
 
 // Initialize database and objects
@@ -21,9 +21,11 @@ $corso = new Corsi($db);
 $data = json_decode(file_get_contents("php://input"));
 
 if ($data) {
-    if (!empty($data->Nome_corso) && !empty($data->Numero_studenti)) {
-        $corso->nome_corso = $data->Nome_corso;
-        $corso->numero_studenti = $data->Numero_studenti;
+    // Validate input data
+    if (isset($data->nome_corso) && isset($data->numero_studenti) && is_string($data->nome_corso) && is_numeric($data->numero_studenti)) {
+        // Sanitize input data if needed
+        $corso->nome_corso = htmlspecialchars(strip_tags($data->nome_corso));
+        $corso->numero_studenti = $data->numero_studenti;
 
         // Attempt to create a course record
         if ($corso->create()) {
@@ -38,7 +40,7 @@ if ($data) {
     } else {
         // 400 Bad Request
         http_response_code(400);
-        echo json_encode(array("message" => "Impossibile creare il corso: dati incompleti."));
+        echo json_encode(array("message" => "Impossibile creare il corso: dati incompleti o non validi."));
     }
 } else {
     // 400 Bad Request (JSON parsing failed)

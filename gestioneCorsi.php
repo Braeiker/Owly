@@ -6,11 +6,29 @@ class Corsi
 
     public $nome_corso;
     public $numero_studenti;
+    public $id;
 
     // Costruttore
     public function __construct($database)
     {
         $this->conn = $database;
+    }
+
+    public function corsoExists() {
+        $query = "SELECT id FROM " . $this->table_name . " WHERE nome_corso = :nome_corso LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+
+        // Associa i parametri
+        $stmt->bindParam(":nome_corso", $this->nome_corso);
+
+        // Esegui la query
+        $stmt->execute();
+
+        // Conta il numero di righe restituite
+        $num_rows = $stmt->rowCount();
+
+        // Restituisci true se il corso esiste, altrimenti false
+        return $num_rows > 0;
     }
 
     // READ corsi 
@@ -69,7 +87,7 @@ class Corsi
             $query = "UPDATE " . $this->table_name . "
                 SET
                 nome_corso = :nome_corso, numero_studenti = :numero_studenti
-                WHERE nome_corso = :nome_corso";
+                WHERE id = :id";
 
             $stmt = $this->conn->prepare($query);
 
@@ -80,6 +98,7 @@ class Corsi
             // Bind parameters
             $stmt->bindParam(":nome_corso", $this->nome_corso);
             $stmt->bindParam(":numero_studenti", $this->numero_studenti);
+            $stmt->bindParam(":id", $this->id);
 
             if($stmt->execute()){
                 return true;
@@ -93,28 +112,30 @@ class Corsi
         }
     }
 
-    // DELETE corsi
-    function delete(){
-        try {
-            $query = "DELETE FROM " . $this->table_name . " WHERE nome_corso = :nome_corso";
-            $stmt = $this->conn->prepare($query);
+   // DELETE corsi
+   function delete(){
+    try {
+        echo "ID del corso da eliminare: " . $this->id;  // Stampa per debug
+        $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
 
-            // Sanitize input
-            $this->nome_corso = htmlspecialchars(strip_tags($this->nome_corso));
-            
-            // Bind parameters
-            $stmt->bindParam(":nome_corso", $this->nome_corso);
+        // Sanitize input
+        $this->id = htmlspecialchars(strip_tags($this->id));
+        
+        // Bind parameters
+        $stmt->bindParam(":id", $this->id);
 
-            if($stmt->execute()){
-                return true;
-            }
-
-            return false;
-        } catch (PDOException $e) {
-            // Handle errors for database operations
-            echo "Error in delete: " . $e->getMessage();
-            return false;
+        if($stmt->execute()){
+            return true;
         }
+
+        return false;
+    } catch (PDOException $e) {
+        // Handle errors for database operations
+        echo "Error in delete: " . $e->getMessage();
+        var_dump($stmt->errorInfo());  // Stampa dettagli aggiuntivi sull'errore
+        return false;
     }
+}
 }
 ?>
