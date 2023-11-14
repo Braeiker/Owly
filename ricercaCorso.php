@@ -1,49 +1,48 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET"); 
+header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
-
 
 $servername = "127.0.0.1";
 $username = "root";
 $password = "";
 $database = "owly_db";
 
-// Creazione della connessione al database
-$conn = new mysqli($servername, $username, $password, $database);
+function connectToDatabase($servername, $username, $password, $database) {
+    $conn = new mysqli($servername, $username, $password, $database);
 
-if ($conn->connect_error) {
-    die("Connessione al database fallita: " . $conn->connect_error);
+    if ($conn->connect_error) {
+        die("Connessione al database fallita: " . $conn->connect_error);
+    }
+
+    return $conn;
 }
 
-// Verifica il metodo della richiesta
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Verifica i parametri GET per il filtraggio
-    $filtroNome = isset($_GET['nome']) ? $_GET['nome'] : '';
-    $filtroMateria = isset($_GET['materia']) ? $_GET['materia'] : '';
-    $filtroPostiDisponibili = isset($_GET['posti_disponibili']) ? intval($_GET['posti_disponibili']) : null;
-
-    // Costruisci la query SQL basata sui filtri
-    $query = "SELECT * FROM corsi WHERE 1";
+function fetchCorsi($conn, $filtroNome, $filtroId) {
+    $query = "SELECT nome_corso, id FROM corsi WHERE 1";
 
     if (!empty($filtroNome)) {
-        $query .= " AND nome LIKE '%$filtroNome%'";
+        $query .= " AND nome_corso LIKE '%$filtroNome%'";
     }
-    if (!empty($filtroMateria)) {
-        $query .= " AND materia LIKE '%$filtroMateria%'";
-    }
-    if ($filtroPostiDisponibili !== null) {
-        $query .= " AND posti_disponibili >= $filtroPostiDisponibili";
+    if ($filtroId !== null) {
+        $query .= " AND (id = ? OR ? IS NULL)";
     }
 
-    // Esegui la query
-    $result = $conn->query($query);
+    $stmt = $conn->prepare($query);
 
-    if ($result === false) {
-        die("Errore nella query: " . $conn->error);
+    if (!$stmt) {
+        die("Errore nella preparazione della query: " . $conn->error);
     }
+
+    if ($filtroId !== null) {
+        $stmt->bind_param("is", $filtroId, $filtroId);
+    }
+
+    $stmt->execute();
+
+    $result = $stmt->get_result();
 
     $corsi = array();
 
@@ -51,10 +50,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $corsi[] = $row;
     }
 
-    echo json_encode($corsi);
-} else {
-    echo json_encode(array("error" => "Metodo non supportato"));
+    $stmt->close();
+
+    return $corsi;
 }
 
-// Chiudi la connessione al database
-$conn->close();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $conn = connectToDatabase($servername, $username, $password, $database);
+
+    $data = json_decode(file_get_contents("php://input"));
+
+    // Verifica che i dati siano presenti e che siano un oggetto JSON valido
+    if ($data && is_object($data)) {
+        $filtroNome = isset($data->filtroNome) ? htmlspecialchars(strip_tags($data->filtroNome)) : null;
+        $filtroId = isset($data->filtroId) ? intval($data->filtroId) : null;
+
+        $corsi = fetchCorsi($conn, $filtroNome, $filtroId);
+
+        echo json_encode($corsi);
+
+    } else {
+        echo json_encode(array("error" => "Dati JSON non validi"));
+        http_response_code(400);  // Bad Request
+        exit();
+    }
+
+} else {
+    echo json_encode(array("error" => "Metodo non supportato"));
+    http_response_code(405);  // Method Not Allowed
+    exit();
+}
+?>
